@@ -1,44 +1,44 @@
-SYS_FIELD_NAME,FIELD_DESC
-YEAR,Year
-QUARTER,Quarter (1-4)
-MONTH,Month
-DAY_OF_MONTH,Day of Month
-DAY_OF_WEEK,Day of Week
-FL_DATE,Flight Date (yyyymmdd)
-MKT_UNIQUE_CARRIER,"Unique Marketing Carrier Code. When the same code has been used by multiple carriers, a numeric suffix is used for earlier users, for example, PA, PA(1), PA(2). Use this field for analysis across a range of years."
-MKT_CARRIER_FL_NUM,Flight Number
-OP_UNIQUE_CARRIER,"Unique Carrier Code. When the same code has been used by multiple carriers, a numeric suffix is used for earlier users, for example, PA, PA(1), PA(2). Use this field for analysis across a range of years."
-TAIL_NUM,Tail Number
-ORIGIN_AIRPORT_ID,"Origin Airport, Airport ID. An identification number assigned by US DOT to identify a unique airport.  Use this field for airport analysis across a range of years because an airport can change its airport code and airport codes can be reused."
-ORIGIN,Origin Airport
-ORIGIN_STATE_ABR,"Origin Airport, State Code"
-DEST_AIRPORT_ID,"Destination Airport, Airport ID. An identification number assigned by US DOT to identify a unique airport.  Use this field for airport analysis across a range of years because an airport can change its airport code and airport codes can be reused."
-DEST,Destination Airport
-DEST_STATE_ABR,"Destination Airport, State Code"
-CRS_DEP_TIME,CRS Departure Time (local time: hhmm)
-DEP_TIME,Actual Departure Time (local time: hhmm)
-DEP_DELAY,Difference in minutes between scheduled and actual departure time. Early departures show negative numbers.
-DEP_DEL15,"Departure Delay Indicator, 15 Minutes or More (1=Yes)"
-DEP_TIME_BLK,"CRS Departure Time Block, Hourly Intervals"
-TAXI_OUT,"Taxi Out Time, in Minutes"
-WHEELS_OFF,Wheels Off Time (local time: hhmm)
-WHEELS_ON,Wheels On Time (local time: hhmm)
-TAXI_IN,"Taxi In Time, in Minutes"
-CRS_ARR_TIME,CRS Arrival Time (local time: hhmm)
-ARR_TIME,Actual Arrival Time (local time: hhmm)
-ARR_DELAY,Difference in minutes between scheduled and actual arrival time. Early arrivals show negative numbers.
-ARR_DEL15,"Arrival Delay Indicator, 15 Minutes or More (1=Yes)"
-ARR_TIME_BLK,"CRS Arrival Time Block, Hourly Intervals"
-CANCELLED,Cancelled Flight Indicator (1=Yes)
-CANCELLATION_CODE,Specifies The Reason For Cancellation
-DIVERTED,Diverted Flight Indicator (1=Yes)
-CRS_ELAPSED_TIME,"CRS Elapsed Time of Flight, in Minutes"
-ACTUAL_ELAPSED_TIME,"Elapsed Time of Flight, in Minutes"
-AIR_TIME,"Flight Time, in Minutes"
-DISTANCE,Distance between airports (miles)
-DISTANCE_GROUP,"Distance Intervals, every 250 Miles, for Flight Segment"
-CARRIER_DELAY,"Carrier Delay, in Minutes"
-WEATHER_DELAY,"Weather Delay, in Minutes"
-NAS_DELAY,"National Air System Delay, in Minutes"
-SECURITY_DELAY,"Security Delay, in Minutes"
-LATE_AIRCRAFT_DELAY,"Late Aircraft Delay, in Minutes"
+SYS_FIELD_NAME,FIELD_DESC,ML_USEFULNESS_DESC
+YEAR,Year,Can capture yearly seasonality or trends in delays—useful for time-series forecasting and anomaly detection when comparing across years.
+QUARTER,Quarter (1-4),Helps identify quarterly patterns or seasonality in delays, supporting time-series prediction and detecting unusual quarterly trends.
+MONTH,Month,Provides monthly seasonality; used in time-series forecasting and for modeling demand/resource allocation changes by month.
+DAY_OF_MONTH,Day of Month,May capture trends around specific dates (e.g., holidays) that affect delays, demand forecasting, and anomaly detection for high-delay days.
+DAY_OF_WEEK,Day of Week,Essential for identifying weekly seasonality—weekends or specific weekdays may have more delays, assisting time-series models.
+FL_DATE,Flight Date (yyyymmdd),Enables exact sequencing for time-series analysis and can be used to spot anomalous days or provide context for optimization models.
+MKT_UNIQUE_CARRIER,"Unique Marketing Carrier Code. When the same code has been used by multiple carriers, a numeric suffix is used for earlier users, for example, PA, PA(1), PA(2). Use this field for analysis across a range of years.",Carrier-level aggregated performance can inform whether certain airlines systematically have more delays (anomaly detection, forecasting).
+MKT_CARRIER_FL_NUM,Flight Number,Used to analyze flight-specific delay patterns over time—helpful for detecting consistently late flights (anomaly detection, resource scheduling).
+OP_UNIQUE_CARRIER,"Unique Carrier Code. When the same code has been used by multiple carriers, a numeric suffix is used for earlier users, for example, PA, PA(1), PA(2). Use this field for analysis across a range of years.",Enables differentiation by operating carrier, allowing detection of carrier-specific anomalies and optimization of carrier resource allocation.
+TAIL_NUM,Tail Number,Identifies specific aircraft; crucial for predicting aircraft-specific delays and optimizing maintenance schedules.
+ORIGIN_AIRPORT_ID,"Origin Airport, Airport ID. An identification number assigned by US DOT...",Allows detection of airport-specific trends/anomalies, resource and staff optimization at the departure airport.
+ORIGIN,Origin Airport,Identifies departure airport for use in local demand/resource forecasting and anomaly detection.
+ORIGIN_STATE_ABR,"Origin Airport, State Code",Can capture regional patterns in delays and support state-wide anomaly detection/optimization.
+DEST_AIRPORT_ID,"Destination Airport, Airport ID. An identification number assigned by US DOT...",Allows detection of destination-specific delay patterns, useful for resource planning/optimization.
+DEST,Destination Airport,Destination airport effect on delay; supports optimization and anomaly detection.
+DEST_STATE_ABR,"Destination Airport, State Code",Captures regional destination effects; supports optimization models for resources across states.
+CRS_DEP_TIME,CRS Departure Time (local time: hhmm),Important for capturing delay likelihood based on scheduled time—detects high-risk intervals for delays (forecasting/anomaly detection).
+DEP_TIME,Actual Departure Time (local time: hhmm),Used in label calculation for delay, may help spot operational anomalies in real time.
+DEP_DELAY,Difference in minutes between scheduled and actual departure time. Early departures show negative numbers.,Primary ML target for delay prediction; also flags operational anomalies.
+DEP_DEL15,"Departure Delay Indicator, 15 Minutes or More (1=Yes)",Binary target variable for classification-based delay predictions and for anomaly detection.
+DEP_TIME_BLK,"CRS Departure Time Block, Hourly Intervals",Groups flights for time block trend analysis; used in scheduling and identifying high-risk hours.
+TAXI_OUT,"Taxi Out Time, in Minutes",May indicate congestion or inefficiency at origin; key for anomaly detection and optimization.
+WHEELS_OFF,Wheels Off Time (local time: hhmm),Can be used to analyze operational pipeline timing and detect system bottlenecks.
+WHEELS_ON,Wheels On Time (local time: hhmm),Useful for detecting late arrivals and optimizing gate scheduling.
+TAXI_IN,"Taxi In Time, in Minutes",May reflect gate/ground resource delays; good for anomaly detection at destination.
+CRS_ARR_TIME,CRS Arrival Time (local time: hhmm),Planned arrival time helps predict periods with peak arrival/departure congestion.
+ARR_TIME,Actual Arrival Time (local time: hhmm),Comparison with schedule defines label and allows post-mortem anomaly analysis.
+ARR_DELAY,Difference in minutes between scheduled and actual arrival time. Early arrivals show negative numbers.,Target for delay prediction; also used in model evaluation for anomaly detection.
+ARR_DEL15,"Arrival Delay Indicator, 15 Minutes or More (1=Yes)",Classification label for delayed arrivals.
+ARR_TIME_BLK,"CRS Arrival Time Block, Hourly Intervals",Enables grouping for resource optimization and detecting delay-prone periods.
+CANCELLED,Cancelled Flight Indicator (1=Yes),Cancels should be flagged—enables anomaly detection (extreme outcome) and resource reallocation modeling.
+CANCELLATION_CODE,Specifies The Reason For Cancellation,Important for classifying causes of operational anomalies and for post-event optimization.
+DIVERTED,Diverted Flight Indicator (1=Yes),Highlights abnormal flight outcomes.
+CRS_ELAPSED_TIME,"CRS Elapsed Time of Flight, in Minutes",Baseline comparison for evaluating actual elapsed times, useful in forecast adjustments and anomaly detection.
+ACTUAL_ELAPSED_TIME,"Elapsed Time of Flight, in Minutes",Key for computing real efficiency, detecting abnormal delays, and planning.
+AIR_TIME,"Flight Time, in Minutes",Correlated with delays; can help adjust resources/crews and catch outlier flights.
+DISTANCE,Distance between airports (miles),Distance affects likelihood of delay; critical for forecasting and resource optimization.
+DISTANCE_GROUP,"Distance Intervals, every 250 Miles, for Flight Segment",Allows stratified modeling/analysis to spot variation by distance category.
+CARRIER_DELAY,"Carrier Delay, in Minutes",Feature in causal analysis, anomaly detection for operational efficiency, and post-hoc optimization.
+WEATHER_DELAY,"Weather Delay, in Minutes",Key for weather risk anomaly detection and resource allocation strategies.
+NAS_DELAY,"National Air System Delay, in Minutes",Captures systemic operational risk points, helps target national-level optimizations.
+SECURITY_DELAY,"Security Delay, in Minutes",Used for anomaly detection due to security; can help optimize security staffing.
+LATE_AIRCRAFT_DELAY,"Late Aircraft Delay, in Minutes",Crucial for propagating delay risk in time-series models and staff optimization.
