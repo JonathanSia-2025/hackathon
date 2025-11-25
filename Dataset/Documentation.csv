@@ -1,6 +1,6 @@
 SYS_FIELD_NAME,FIELD_DESC,ML_USEFULNESS_DESC
 YEAR,Year,Can capture yearly seasonality or trends in delays—useful for time-series forecasting and anomaly detection when comparing across years.
-QUARTER,Quarter (1-4),Helps identify quarterly patterns or seasonality in delays, supporting time-series prediction and detecting unusual quarterly trends.
+QUARTER,"Quarter (1-4),Helps identify quarterly patterns or seasonality in delays", supporting time-series prediction and detecting unusual quarterly trends.
 MONTH,Month,Provides monthly seasonality; used in time-series forecasting and for modeling demand/resource allocation changes by month.
 DAY_OF_MONTH,Day of Month,May capture trends around specific dates (e.g., holidays) that affect delays, demand forecasting, and anomaly detection for high-delay days.
 DAY_OF_WEEK,Day of Week,Essential for identifying weekly seasonality—weekends or specific weekdays may have more delays, assisting time-series models.
@@ -42,3 +42,4 @@ WEATHER_DELAY,"Weather Delay, in Minutes",Key for weather risk anomaly detection
 NAS_DELAY,"National Air System Delay, in Minutes",Captures systemic operational risk points, helps target national-level optimizations.
 SECURITY_DELAY,"Security Delay, in Minutes",Used for anomaly detection due to security; can help optimize security staffing.
 LATE_AIRCRAFT_DELAY,"Late Aircraft Delay, in Minutes",Crucial for propagating delay risk in time-series models and staff optimization.
+
