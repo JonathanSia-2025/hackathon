@@ -9,6 +9,9 @@ from prophet import Prophet
 # 1.1 LOAD HISTORICAL FLIGHT DATA (STRICT MODE)
 # ==============================
 
+# Optional SHAP explainability; will be created after model training if available
+explainer = None
+
 #syntax to let user upload csv
 """
 from tkinter import Tk
@@ -310,6 +313,18 @@ else:
     )
     model.fit(X_train, y_train)
 
+    # Build a SHAP TreeExplainer for per-row explanations if shap is available
+    try:
+        import shap
+        try:
+            explainer = shap.TreeExplainer(model)
+            print("SHAP explainer created.")
+        except Exception as e:
+            explainer = None
+            print("SHAP available but failed to create TreeExplainer:", e)
+    except Exception:
+        explainer = None
+        print("shap package not available; per-row explanations disabled.")
 # ==============================
 # 6️⃣ SINGLE-FILE FUTURE ROWS (use the same uploaded CSV for future schedules)
 # ==============================
@@ -532,9 +547,45 @@ def forecast_future_days(df, model, feature_cols, airline, route, n_days=365):
         # --- model prediction ---
         X_pred = pd.DataFrame([[new_row.get(col, 0) for col in feature_cols]], columns=feature_cols)
         pred = float(model.predict(X_pred)[0])
+        # --- per-row SHAP contributor breakdown (if explainer available) ---
+        explanation = ""
+        contributor_breakdown = ""
+        try:
+            if 'explainer' in globals() and globals().get('explainer') is not None:
+                sv = globals()['explainer'].shap_values(X_pred)
+                # sv can be array-like; handle common shapes
+                if isinstance(sv, list):
+                    vals = sv[0]
+                else:
+                    vals = sv[0] if (hasattr(sv, 'ndim') and sv.ndim == 2) else sv
+                vals = [float(v) for v in vals]
+                pairs = list(zip(X_pred.columns.tolist(), vals))
+                # short explanation: show only curated static factors (domain-relevant)
+                static_factors = [
+                    "WEATHER_DELAY", "AIR_SYSTEM_DELAY", "SECURITY_DELAY",
+                    "AIRLINE_DELAY", "LATE_AIRCRAFT_DELAY", "DEPARTURE_DELAY"
+                ]
+                # collect contributions for static factors (if present)
+                static_pairs = [(f, v) for f, v in pairs if f in static_factors]
+                # sort by absolute impact and show all non-zero static contributors
+                static_pairs = [p for p in sorted(static_pairs, key=lambda x: abs(x[1]), reverse=True) if abs(p[1]) > 0]
+                if static_pairs:
+                    explanation = "; ".join([f"{f}:{v:+.1f}" for f, v in static_pairs])
+                else:
+                    # fallback to previous behavior (top positive contributors) when no static factors present
+                    top = sorted(pairs, key=lambda x: abs(x[1]), reverse=True)[:3]
+                    top_pos = [(f, v) for f, v in top if v > 0]
+                    if top_pos:
+                        explanation = "; ".join([f"{f}:+{v:.1f}" for f, v in top_pos])
+                # full contributor breakdown: include every feature with its contribution
+                contributor_breakdown = "; ".join([f"{f}:{v:+.1f}" for f, v in pairs])
+        except Exception:
+            explanation = ""
+            contributor_breakdown = ""
         # include feature context in returned row for explanation
         row_out = new_row.copy()
-        row_out.update({"DATE_STD": next_date, "PREDICTED_DELAY": pred})
+        # ensure predicted delay comes first in the output dict
+        row_out.update({"DATE_STD": next_date, "PREDICTED_DELAY": pred, "CONTRIBUTOR_BREAKDOWN": contributor_breakdown, "EXPLANATION": explanation})
         future_rows.append(row_out)
 
         # --- update lags ---
@@ -724,7 +775,49 @@ else:
             )
 
 print(f"\n===== {days}-DAY FLIGHT DELAY FORECAST =====")
-print(forecast_result)
+
+# Create a concise display: DATE, total predicted delay, and per-factor estimated minutes
+def build_concise_display(forecast_df):
+    dfc = forecast_df.copy()
+    # static factors we want to show per your request
+    static_factors = [
+        "WEATHER_DELAY", "AIR_SYSTEM_DELAY", "SECURITY_DELAY",
+        "AIRLINE_DELAY", "LATE_AIRCRAFT_DELAY", "DEPARTURE_DELAY"
+    ]
+
+    # initialize columns
+    for f in static_factors:
+        dfc[f] = 0.0
+
+    # parse CONTRIBUTOR_BREAKDOWN if present
+    if "CONTRIBUTOR_BREAKDOWN" in dfc.columns:
+        for idx, val in dfc["CONTRIBUTOR_BREAKDOWN"].fillna("").items():
+            parts = [p.strip() for p in str(val).split(";") if p.strip()]
+            for p in parts:
+                if ":" in p:
+                    k, v = p.split(":", 1)
+                    k = k.strip()
+                    try:
+                        vnum = float(v.replace('+',''))
+                    except Exception:
+                        try:
+                            vnum = float(v)
+                        except Exception:
+                            vnum = 0.0
+                    if k in static_factors:
+                        dfc.at[idx, k] = vnum
+
+    # Build concise dataframe
+    cols = ["DATE_STD", "PREDICTED_DELAY"] + static_factors
+    available = [c for c in cols if c in dfc.columns]
+    return dfc[available]
+
+try:
+    concise = build_concise_display(forecast_result)
+    print(concise)
+except Exception:
+    # fallback to full print if anything goes wrong
+    print(forecast_result)
 
 future_risks = detect_future_risks(forecast_result, threshold=threshold_for_forecast)
 
@@ -742,13 +835,29 @@ safe_route = ROUTE_TO_USE.replace("/", "_").replace(" ", "")
 safe_airline = AIRLINE_TO_USE.replace("/", "_").replace(" ", "")
 ts = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
 
-forecast_path = f"{out_dir}/forecast_{safe_airline}_{safe_route}_{ts}.csv"
+forecast_summary_path = f"{out_dir}/forecast_summary_{safe_airline}_{safe_route}_{ts}.csv"
 risks_path = f"{out_dir}/risks_{safe_airline}_{safe_route}_{ts}.csv"
 
 try:
-    forecast_result.to_csv(forecast_path, index=False)
+    # Save concise summary (DATE_STD, PREDICTED_DELAY, per-static-factor minutes)
+    if 'concise' in globals():
+        concise.to_csv(forecast_summary_path, index=False)
+        print(f"\nSaved concise forecast summary CSV: {forecast_summary_path}")
+    else:
+        # fallback: save a minimal forecast_result if concise not available
+        forecast_result[[c for c in ['DATE_STD','PREDICTED_DELAY'] if c in forecast_result.columns]].to_csv(forecast_summary_path, index=False)
+        print(f"\nSaved concise forecast summary CSV (fallback): {forecast_summary_path}")
+
     future_risks.to_csv(risks_path, index=False)
-    print(f"\nSaved forecast CSV: {forecast_path}")
     print(f"Saved risks CSV: {risks_path}")
 except Exception as e:
     print(f"Failed to save CSVs: {e}")
+    
+# Also save a concise summary CSV with only date, predicted delay, and per-static-factor contributions
+try:
+    concise = build_concise_display(forecast_result)
+    summary_path = f"{out_dir}/forecast_summary_{safe_airline}_{safe_route}_{ts}.csv"
+    concise.to_csv(summary_path, index=False)
+    print(f"Saved concise forecast summary CSV: {summary_path}")
+except Exception as e:
+    print(f"Failed to save concise summary CSV: {e}")
